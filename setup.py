@@ -1,7 +1,7 @@
 from distutils.core import setup
 setup(
     name='vertalert',
-    version='0.1.0',
+    version='0.2.0',
     py_modules=['vertalert'],
     url='http://www.gyroshot.com/vertalert.htm',
     author='Robert Martens',
