@@ -1,5 +1,5 @@
 
-  --VertAlert 0.2.0--
+  --VertAlert 0.2.1--
 
     Find, display, and optionally round floating point plane coordinates in
   Source engine .vmf files. Standalone executable has no dependencies, Python
@@ -120,6 +120,9 @@
 
 
   --Changes--
+
+    0.2.1 - January 1st, 2013
+      Update fix_plane's use of string replace method
 
     0.2.0 - November 27th, 2012
       Added --thresh

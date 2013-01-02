@@ -60,7 +60,7 @@ def fix_plane(plane, regex):
         rounded = orig.quantize(1, decimal.ROUND_HALF_EVEN)
         # I replace str(coord) instead of orig here, since
         # that would miss values using scientific notation.
-        plane_new = plane_new.replace(str(coord), str(rounded))
+        plane_new = plane_new.replace(str(coord), str(rounded), 1)
     return plane_new
 
 
