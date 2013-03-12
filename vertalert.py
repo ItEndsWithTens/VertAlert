@@ -188,9 +188,9 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None):
     print_dev_table(sorted_devs)
 
     if len(sorted_devs) == 1:
-        warn_suffix = ", "
+        warn_suffix = ""
     else:
-        warn_suffix = "es, "
+        warn_suffix = "es"
     if float_brushes - len(sorted_devs) == 1:
         action_suffix = ""
     else:
@@ -200,9 +200,10 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None):
     else:
         action = " ignored"
 
-    sys.stdout.write(str(len(sorted_devs)) + " suspect brush" + warn_suffix +
-                     str(float_brushes - len(sorted_devs)) + " brush" +
+    sys.stdout.write(str(float_brushes - len(sorted_devs)) + " brush" +
                      action_suffix + action + '\n')
+    sys.stdout.write(str(len(sorted_devs)) + " suspect brush" + warn_suffix +
+                     " remaining\n")
     sys.stdout.flush()
 
     if fix:
