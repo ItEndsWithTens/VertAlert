@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2012 Robert Martens <robert.martens@gmail.com>
+# Copyright (c) 2012, 2013 Robert Martens <robert.martens@gmail.com>
 # See file COPYING.txt for MIT license terms.
 
 
