@@ -108,6 +108,8 @@ def fix_brushes(brushes, thresh, vmf_in):
             devs.append((brush_id, max_dev))
         sys.stdout.write('\r%s%% complete' % str(int(i / percent)))
         sys.stdout.flush()
+    sys.stdout.write("\r             \n")
+    sys.stdout.flush()
     return (float_brushes, devs, vmf_out)
 
 
@@ -204,8 +206,6 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None):
     #            closing curly brace.
     brushes = re.findall(r'solid\r?\n\t{.*?\r?\n\t}', vmf_in, re.DOTALL)
     float_brushes, devs, vmf_out = fix_brushes(brushes, thresh, vmf_in)
-    sys.stdout.write("\r             \n")
-    sys.stdout.flush()
 
     print_dev_table(devs, float_brushes, fix)
 
