@@ -21,6 +21,12 @@ import re
 import sys
 
 
+def get_dev(coord):
+    orig = decimal.Decimal(coord)
+    rounded = orig.quantize(1, decimal.ROUND_HALF_EVEN)
+    return max(rounded, orig) - min(rounded, orig)
+
+
 def get_max_dev(planes):
     """
     Search a brush's planes for the largest deviation any of its
@@ -37,9 +43,7 @@ def get_max_dev(planes):
         floats += re.findall(r'-?\d+\.\d+e?-?\d*', plane)
     devs = []
     for coord in floats:
-        orig = decimal.Decimal(coord)
-        rounded = orig.quantize(1, decimal.ROUND_HALF_EVEN)
-        devs.append(max(rounded, orig) - min(rounded, orig))
+        devs.append(get_dev(coord))
     return max(devs)
 
 
