@@ -226,7 +226,7 @@ if __name__ == '__main__':
         "-f", "--fix", help="write fixed up VMF", action="store_true")
     PARSER.add_argument(
         "-fn", "--fixname",
-        help="filename to use with --fix, default appends _VERTALERT suffix")
+        help="filename to use with --fix (default appends _VERTALERT)")
     PARSER.add_argument(
         "-t", "--thresh",
         type=decimal.Decimal,
