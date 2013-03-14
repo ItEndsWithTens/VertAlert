@@ -111,7 +111,7 @@ def fix_brushes(brushes, thresh, vmf_in):
     return (float_brushes, devs, vmf_out)
 
 
-def print_dev_table(sorted_devs):
+def print_dev_table(devs, float_brushes, fix):
     """
     Print, to stdout, a table displaying each brush ID and its
     coordinates' maximum deviation from the nearest integer.
@@ -120,17 +120,36 @@ def print_dev_table(sorted_devs):
         sorted_devs: a list of tuples pairing brush id with max deviation
 
     """
-    if sorted_devs:
-        max_id_width = len(str(max(sorted_devs[0])))
+    if devs:
+        devs = sorted(devs, key=lambda dev: dev[-1])
+        max_id_width = len(str(max(devs[0])))
         left_w = max(max_id_width, len("Suspect id"))
         header = ("Suspect ID").rjust(left_w) + '  ' + "Max dev" + '\n'
         sys.stdout.write(header)
         sys.stdout.write('-' * (len(header) - 1) + '\n')
-        for dev in sorted_devs:
+        for dev in devs:
             dev_str = str(dev[0]).rjust(left_w) + "  " + str(dev[1]) + "\n"
             sys.stdout.write(dev_str)
             sys.stdout.flush()
         sys.stdout.write('\n')
+
+        if len(devs) == 1:
+            warn_suffix = ""
+        else:
+            warn_suffix = "es"
+        if float_brushes - len(devs) == 1:
+            action_suffix = ""
+        else:
+            action_suffix = "es"
+        if fix:
+            action = " automatically rounded"
+        else:
+            action = " ignored"
+
+        sys.stdout.write(str(float_brushes - len(devs)) + " brush" +
+                         action_suffix + action + '\n')
+        sys.stdout.write(str(len(devs)) + " suspect brush" +
+                         warn_suffix + " remaining\n")
         sys.stdout.flush()
 
 
@@ -188,27 +207,7 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None):
     sys.stdout.write("\r             \n")
     sys.stdout.flush()
 
-    sorted_devs = sorted(devs, key=lambda dev: dev[-1])
-    print_dev_table(sorted_devs)
-
-    if len(sorted_devs) == 1:
-        warn_suffix = ""
-    else:
-        warn_suffix = "es"
-    if float_brushes - len(sorted_devs) == 1:
-        action_suffix = ""
-    else:
-        action_suffix = "es"
-    if fix:
-        action = " automatically rounded"
-    else:
-        action = " ignored"
-
-    sys.stdout.write(str(float_brushes - len(sorted_devs)) + " brush" +
-                     action_suffix + action + '\n')
-    sys.stdout.write(str(len(sorted_devs)) + " suspect brush" + warn_suffix +
-                     " remaining\n")
-    sys.stdout.flush()
+    print_dev_table(devs, float_brushes, fix)
 
     if fix:
         with open(fixname, 'w') as vmf:
