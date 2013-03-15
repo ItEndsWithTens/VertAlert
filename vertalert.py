@@ -27,7 +27,7 @@ def get_dev(coord, snap):
     return max(rounded, orig) - min(rounded, orig)
 
 
-def get_max_dev(planes):
+def get_max_dev(planes, snap):
     """
     Search a brush's planes for the largest deviation any of its
     vertices' coordinates make from the nearest integer.
@@ -43,11 +43,12 @@ def get_max_dev(planes):
         floats += re.findall(r'-?\d+\.\d+e?-?\d*', plane)
     devs = []
     for coord in floats:
-        devs.append(get_dev(coord, 1))
+        devs.append(get_dev(coord, snap))
+
     return max(devs)
 
 
-def fix_plane(plane, regex):
+def fix_plane(plane, regex, thresh, snaplo, snaphi):
     """
     Use 'regex' pattern to find floating point coordinates in 'plane',
     round to nearest integer, and return corrected plane string.
@@ -61,14 +62,20 @@ def fix_plane(plane, regex):
     plane_new = plane
     for coord in floats:
         orig = decimal.Decimal(coord)
-        rounded = orig.quantize(1, decimal.ROUND_HALF_EVEN)
-        # I replace str(coord) instead of orig here, since
-        # that would miss values using scientific notation.
-        plane_new = plane_new.replace(str(coord), str(rounded), 1)
+        if get_dev(orig, snaplo) < thresh:
+            rounded = (orig / snaplo).quantize(1, decimal.ROUND_HALF_EVEN) * snaplo
+            rounded = rounded.normalize()
+            # I replace str(coord) instead of orig here, since
+            # that would miss values using scientific notation.
+            plane_new = plane_new.replace(str(coord), str(rounded), 1)
+        elif snaphi is not None:
+            rounded = (orig / snaphi).quantize(1, decimal.ROUND_HALF_EVEN) * snaphi
+            rounded = rounded.normalize()
+            plane_new = plane_new.replace(str(coord), str(rounded), 1)
     return plane_new
 
 
-def fix_brushes(brushes, thresh, vmf_in):
+def fix_brushes(brushes, thresh, vmf_in, snaplo, snaphi):
     """
     Find and fix brushes with floating point plane vertex coordinates.
 
@@ -84,9 +91,9 @@ def fix_brushes(brushes, thresh, vmf_in):
 
     """
     vmf_out = vmf_in
-    float_brushes = 0
+    rounded_count = 0
     percent = len(brushes) / 100.0
-    devs = []
+    suspects = []
     for i, brush in enumerate(brushes):
         brush_id = int(re.search(r'"id"\s"(\d+)"', brush).group(1))
         float_planes = []
@@ -96,22 +103,24 @@ def fix_brushes(brushes, thresh, vmf_in):
         if not float_planes:
             continue
 
-        max_dev = get_max_dev(float_planes)
-        if max_dev < thresh:
-            brush_new = brush
-            for plane in float_planes:
-                plane_new = fix_plane(plane, r'-?\d+\.\d+e?-?\d*')
-                brush_new = brush_new.replace(plane, plane_new)
-            vmf_out = vmf_out.replace(brush, brush_new)
-            float_brushes += 1
+        brush_new = brush
+        for plane in float_planes:
+            plane_new = fix_plane(plane, r'-?\d+\.\d+e?-?\d*', thresh, snaplo, snaphi)
+            brush_new = brush_new.replace(plane, plane_new)
+        vmf_out = vmf_out.replace(brush, brush_new)
+
+        max_dev = get_max_dev(float_planes, snaplo)
+        if max_dev < thresh or snaphi is not None:
+            rounded_count += 1
         else:
-            devs.append((brush_id, max_dev))
+            suspects.append((brush_id, max_dev))
+
         sys.stdout.write('\r%s%% complete' % str(int(i / percent)))
         sys.stdout.flush()
     sys.stdout.write("\r             \n")
     sys.stdout.flush()
-    return (float_brushes, devs, vmf_out)
 
+    return (rounded_count, suspects, vmf_out)
 
 
 def print_dev_table(suspects, rounded_count, fix):
@@ -156,7 +165,8 @@ def print_dev_table(suspects, rounded_count, fix):
     sys.stdout.flush()
 
 
-def vertalert(file_in, fix=False, fixname=None, thresh=None):
+def vertalert(file_in, fix=False, fixname=None, thresh=None,
+              snaplo=None, snaphi=None):
     """
     Find, and optionally fix, floating point plane coordinates in a
     Source engine .vmf file.
@@ -182,8 +192,10 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None):
     if fixname is None:
         in_name_split = os.path.splitext(file_in)
         fixname = in_name_split[0] + "_VERTALERT" + in_name_split[1]
+    if snaplo is None:
+        snaplo = decimal.Decimal('1')
     if thresh is None:
-        thresh = decimal.Context().create_decimal('0.2')
+        thresh = snaplo * decimal.Decimal('0.2')
 
     with open(file_in, 'r') as vmf:
         vmf_in = vmf.read()
@@ -206,9 +218,10 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None):
     # \r?\n\t} - Zero or one carriage return, one newline, one tab,
     #            closing curly brace.
     brushes = re.findall(r'solid\r?\n\t{.*?\r?\n\t}', vmf_in, re.DOTALL)
-    float_brushes, devs, vmf_out = fix_brushes(brushes, thresh, vmf_in)
+    rounded_count, suspects, vmf_out = fix_brushes(brushes, thresh, vmf_in,
+                                               snaplo, snaphi)
 
-    print_dev_table(devs, float_brushes, fix)
+    print_dev_table(suspects, rounded_count, fix)
 
     if fix:
         with open(fixname, 'w') as vmf:
@@ -231,7 +244,19 @@ if __name__ == '__main__':
     PARSER.add_argument(
         "-t", "--thresh",
         type=decimal.Decimal,
-        help="threshold below which to ignore/round coordinates (default 0.2)")
+        help="threshold below which to ignore/round coordinates "
+             "(default snaplo * 0.2)")
+    PARSER.add_argument(
+        "-sl", "--snaplo",
+        type=decimal.Decimal,
+        help="coordinates with deviations less than thresh will be rounded to "
+             "the nearest multiple of this value (default 1)")
+    PARSER.add_argument(
+        "-sh", "--snaphi",
+        type=decimal.Decimal,
+        help="coordinates with deviations equal to or greater than thresh will "
+             "be rounded to the nearest multiple of this value (default None)")
     ARGS = PARSER.parse_args()
 
-    vertalert(ARGS.input, ARGS.fix, ARGS.fixname, ARGS.thresh)
+    vertalert(ARGS.input, ARGS.fix, ARGS.fixname, ARGS.thresh,
+              ARGS.snaplo, ARGS.snaphi)
