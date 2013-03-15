@@ -21,9 +21,9 @@ import re
 import sys
 
 
-def get_dev(coord):
+def get_dev(coord, snap):
     orig = decimal.Decimal(coord)
-    rounded = orig.quantize(1, decimal.ROUND_HALF_EVEN)
+    rounded = (orig / snap).quantize(1, decimal.ROUND_HALF_EVEN) * snap
     return max(rounded, orig) - min(rounded, orig)
 
 
@@ -43,7 +43,7 @@ def get_max_dev(planes):
         floats += re.findall(r'-?\d+\.\d+e?-?\d*', plane)
     devs = []
     for coord in floats:
-        devs.append(get_dev(coord))
+        devs.append(get_dev(coord, 1))
     return max(devs)
 
 
