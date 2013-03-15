@@ -95,8 +95,7 @@ def fix_brushes(brushes, thresh, vmf_in):
                 float_planes.append(plane)
         if not float_planes:
             continue
-        else:
-            float_brushes += 1
+
         max_dev = get_max_dev(float_planes)
         if max_dev < thresh:
             brush_new = brush
@@ -104,6 +103,7 @@ def fix_brushes(brushes, thresh, vmf_in):
                 plane_new = fix_plane(plane, r'-?\d+\.\d+e?-?\d*')
                 brush_new = brush_new.replace(plane, plane_new)
             vmf_out = vmf_out.replace(brush, brush_new)
+            float_brushes += 1
         else:
             devs.append((brush_id, max_dev))
         sys.stdout.write('\r%s%% complete' % str(int(i / percent)))
@@ -113,7 +113,8 @@ def fix_brushes(brushes, thresh, vmf_in):
     return (float_brushes, devs, vmf_out)
 
 
-def print_dev_table(devs, float_brushes, fix):
+
+def print_dev_table(suspects, rounded_count, fix):
     """
     Print, to stdout, a table displaying each brush ID and its
     coordinates' maximum deviation from the nearest integer.
@@ -122,37 +123,37 @@ def print_dev_table(devs, float_brushes, fix):
         sorted_devs: a list of tuples pairing brush id with max deviation
 
     """
-    if devs:
-        devs = sorted(devs, key=lambda dev: dev[-1])
-        max_id_width = len(str(max(devs[0])))
+    if suspects:
+        suspects = sorted(suspects, key=lambda suspect: suspect[-1])
+        max_id_width = len(str(max(suspects[0])))
         left_w = max(max_id_width, len("Suspect id"))
         header = ("Suspect ID").rjust(left_w) + '  ' + "Max dev" + '\n'
         sys.stdout.write(header)
         sys.stdout.write('-' * (len(header) - 1) + '\n')
-        for dev in devs:
-            dev_str = str(dev[0]).rjust(left_w) + "  " + str(dev[1]) + "\n"
-            sys.stdout.write(dev_str)
+        for suspect in suspects:
+            suspect_str = str(suspect[0]).rjust(left_w) + "  " + str(suspect[1]) + "\n"
+            sys.stdout.write(suspect_str)
             sys.stdout.flush()
         sys.stdout.write('\n')
 
-        if len(devs) == 1:
-            warn_suffix = ""
-        else:
-            warn_suffix = "es"
-        if float_brushes - len(devs) == 1:
-            action_suffix = ""
-        else:
-            action_suffix = "es"
-        if fix:
-            action = " automatically rounded"
-        else:
-            action = " ignored"
+    if len(suspects) == 1:
+        warn_suffix = ""
+    else:
+        warn_suffix = "es"
+    if rounded_count == 1:
+        action_suffix = ""
+    else:
+        action_suffix = "es"
+    if fix:
+        action = " automatically rounded"
+    else:
+        action = " ignored"
 
-        sys.stdout.write(str(float_brushes - len(devs)) + " brush" +
-                         action_suffix + action + '\n')
-        sys.stdout.write(str(len(devs)) + " suspect brush" +
-                         warn_suffix + " remaining\n")
-        sys.stdout.flush()
+    sys.stdout.write(str(rounded_count) + " brush" +
+                     action_suffix + action + '\n')
+    sys.stdout.write(str(len(suspects)) + " suspect brush" +
+                     warn_suffix + " remaining\n")
+    sys.stdout.flush()
 
 
 def vertalert(file_in, fix=False, fixname=None, thresh=None):
