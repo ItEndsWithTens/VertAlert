@@ -24,7 +24,7 @@ import sys
 def get_dev(coord, snap):
     orig = decimal.Decimal(coord)
     rounded = (orig / snap).quantize(1, decimal.ROUND_HALF_EVEN) * snap
-    return max(rounded, orig) - min(rounded, orig)
+    return abs(rounded - orig)
 
 
 def get_max_dev(planes, snap):
