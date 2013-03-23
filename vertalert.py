@@ -15,15 +15,15 @@ brute force regex search, vertalert only checks enabled VisGroups.
 """
 
 
-import decimal
+import decimal as dec
 import os
 import re
 import sys
 
 
 def get_dev(coord, snap):
-    orig = decimal.Decimal(coord)
-    rounded = (orig / snap).quantize(1, decimal.ROUND_HALF_EVEN) * snap
+    orig = dec.Decimal(coord)
+    rounded = (orig / snap).quantize(1, dec.ROUND_HALF_EVEN) * snap
     return abs(rounded - orig)
 
 
@@ -61,15 +61,15 @@ def fix_plane(plane, thresh, snaplo, snaphi):
     floats = re.findall(r'-?\d+\.\d+e?-?\d*', plane)
     plane_new = plane
     for coord in floats:
-        orig = decimal.Decimal(coord)
+        orig = dec.Decimal(coord)
         if get_dev(orig, snaplo) < thresh:
-            rounded = (orig / snaplo).quantize(1, decimal.ROUND_HALF_EVEN) * snaplo
+            rounded = (orig / snaplo).quantize(1, dec.ROUND_HALF_EVEN) * snaplo
             rounded = rounded.normalize()
             # I replace str(coord) instead of orig here, since
             # that would miss values using scientific notation.
             plane_new = plane_new.replace(str(coord), str(rounded), 1)
         elif snaphi is not None:
-            rounded = (orig / snaphi).quantize(1, decimal.ROUND_HALF_EVEN) * snaphi
+            rounded = (orig / snaphi).quantize(1, dec.ROUND_HALF_EVEN) * snaphi
             rounded = rounded.normalize()
             plane_new = plane_new.replace(str(coord), str(rounded), 1)
     return plane_new
@@ -134,13 +134,14 @@ def print_dev_table(suspects, rounded_count, fix):
     if suspects:
         suspects = sorted(suspects, key=lambda suspect: suspect[-1])
         max_id_width = len(str(max(suspects[0])))
-        left_w = max(max_id_width, len("Suspect id"))
+        left_w = max(max_id_width, len("Suspect ID"))
         header = ("Suspect ID").rjust(left_w) + '  ' + "Max dev" + '\n'
         sys.stdout.write(header)
         sys.stdout.write('-' * (len(header) - 1) + '\n')
         for suspect in suspects:
-            suspect_str = str(suspect[0]).rjust(left_w) + "  " + str(suspect[1]) + "\n"
-            sys.stdout.write(suspect_str)
+            left = str(suspect[0]).rjust(left_w)
+            right = str(suspect[1])
+            sys.stdout.write(left + "  " + right + "\n")
             sys.stdout.flush()
         sys.stdout.write('\n')
 
@@ -192,9 +193,9 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None,
         in_name_split = os.path.splitext(file_in)
         fixname = in_name_split[0] + "_VERTALERT" + in_name_split[1]
     if snaplo is None:
-        snaplo = decimal.Decimal('1')
+        snaplo = dec.Decimal('1')
     if thresh is None:
-        thresh = snaplo * decimal.Decimal('0.2')
+        thresh = snaplo * dec.Decimal('0.2')
 
     with open(file_in, 'r') as vmf:
         vmf_in = vmf.read()
@@ -242,17 +243,17 @@ if __name__ == '__main__':
         help="filename to use with --fix (default appends _VERTALERT)")
     PARSER.add_argument(
         "-t", "--thresh",
-        type=decimal.Decimal,
+        type=dec.Decimal,
         help="threshold below which to ignore/round coordinates "
              "(default snaplo * 0.2)")
     PARSER.add_argument(
         "-sl", "--snaplo",
-        type=decimal.Decimal,
+        type=dec.Decimal,
         help="coordinates with deviations less than thresh will be rounded to "
              "the nearest multiple of this value (default 1)")
     PARSER.add_argument(
         "-sh", "--snaphi",
-        type=decimal.Decimal,
+        type=dec.Decimal,
         help="coordinates with deviations equal to or greater than thresh will "
              "be rounded to the nearest multiple of this value (default None)")
     ARGS = PARSER.parse_args()
