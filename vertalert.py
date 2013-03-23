@@ -48,7 +48,7 @@ def get_max_dev(planes, snap):
     return max(devs)
 
 
-def fix_plane(plane, regex, thresh, snaplo, snaphi):
+def fix_plane(plane, thresh, snaplo, snaphi):
     """
     Use 'regex' pattern to find floating point coordinates in 'plane',
     round to nearest integer, and return corrected plane string.
@@ -58,7 +58,7 @@ def fix_plane(plane, regex, thresh, snaplo, snaphi):
         regex: Regular Expression pattern to use for search
 
     """
-    floats = re.findall(regex, plane)
+    floats = re.findall(r'-?\d+\.\d+e?-?\d*', plane)
     plane_new = plane
     for coord in floats:
         orig = decimal.Decimal(coord)
@@ -107,7 +107,7 @@ def fix_brushes(brushes, thresh, vmf_in, snaplo, snaphi):
         if max_dev < thresh or snaphi is not None:
             brush_new = brush
             for plane in float_planes:
-                plane_new = fix_plane(plane, r'-?\d+\.\d+e?-?\d*', thresh, snaplo, snaphi)
+                plane_new = fix_plane(plane, thresh, snaplo, snaphi)
                 brush_new = brush_new.replace(plane, plane_new)
             vmf_out = vmf_out.replace(brush, brush_new)
             rounded_count += 1
