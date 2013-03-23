@@ -22,6 +22,14 @@ import sys
 
 
 def get_dev(coord, snap):
+    """
+    Compute a coordinate's deviation from the nearest multiple of snap.
+
+    Keyword arguments:
+        coord: the coordinate to check
+        snap: base value from which to compute deviation
+
+    """
     orig = dec.Decimal(coord)
     rounded = (orig / snap).quantize(1, dec.ROUND_HALF_EVEN) * snap
     return abs(rounded - orig)
@@ -29,11 +37,12 @@ def get_dev(coord, snap):
 
 def get_max_dev(planes, snap):
     """
-    Search a brush's planes for the largest deviation any of its
-    vertices' coordinates make from the nearest integer.
+    Search a brush's planes for the largest deviation any one of its
+    vertices' coordinates makes from the nearest multiple of snap.
 
     Keyword arguments:
         planes: list of strings representing the planes to check
+        snap: base value from which to compute deviation
 
     """
     floats = []
@@ -50,12 +59,17 @@ def get_max_dev(planes, snap):
 
 def fix_plane(plane, thresh, snaplo, snaphi):
     """
-    Use 'regex' pattern to find floating point coordinates in 'plane',
-    round to nearest integer, and return corrected plane string.
+    Find floating point coordinates in a plane, round to nearest multiple of
+    snaplo or snaphi depending on computed deviation, and return corrected plane
+    string.
 
     Keyword arguments:
         plane: string to search for floats
-        regex: Regular Expression pattern to use for search
+        thresh: threshold between snaplo and snaphi
+        snaplo: deviations less than thresh will be rounded to the nearest
+                multiple of this value
+        snaphi: deviations equal to or greater than thresh will be rounded to
+                the nearest multiple of this value
 
     """
     floats = re.findall(r'-?\d+\.\d+e?-?\d*', plane)
@@ -77,17 +91,21 @@ def fix_plane(plane, thresh, snaplo, snaphi):
 
 def fix_brushes(brushes, thresh, vmf_in, snaplo, snaphi):
     """
-    Find and fix brushes with floating point plane vertex coordinates.
+    Find and fix brushes with floating point plane coordinates.
 
-    Returns a tuple containing the total number of brushes with floats,
-    a list of the greatest deviation any of a brush's coordinates makes
-    from the nearest integer, and a fixed version of vmf_in. Corrects
-    only deviations less than 'thresh'.
+    Returns a tuple containing the total number of brushes whose coordinates
+    were rounded, a list of tuples which pairs suspicious brush IDs with the
+    greatest deviation any one of their coordinates makes from the nearest
+    multiple of snaplo, and a fixed version of vmf_in.
 
     Keyword arguments:
         brushes: list of brush strings to search
-        thresh: threshold below which to ignore/round coordinates
+        thresh: threshold between snaplo and snaphi
         vmf_in: string containing input VMF contents
+        snaplo: deviations less than thresh will be rounded to the nearest
+                multiple of this value
+        snaphi: deviations equal to or greater than thresh will be rounded to
+                the nearest multiple of this value
 
     """
     vmf_out = vmf_in
@@ -125,10 +143,12 @@ def fix_brushes(brushes, thresh, vmf_in, snaplo, snaphi):
 def print_dev_table(suspects, rounded_count, fix):
     """
     Print, to stdout, a table displaying each brush ID and its
-    coordinates' maximum deviation from the nearest integer.
+    coordinates' maximum deviation from the nearest multiple of snaplo.
 
     Keyword arguments:
-        sorted_devs: a list of tuples pairing brush id with max deviation
+        suspects: a list of tuples pairing brush id with max deviation
+        rounded_count: the number of brushes whose coordinates were rounded
+        fix: whether or not a modified VMF is being written to disk
 
     """
     if suspects:
@@ -168,17 +188,18 @@ def print_dev_table(suspects, rounded_count, fix):
 def vertalert(file_in, fix=False, fixname=None, thresh=None,
               snaplo=None, snaphi=None):
     """
-    Find, and optionally fix, floating point plane coordinates in a
+    Find, display, and optionally round floating point plane coordinates in a
     Source engine .vmf file.
-
-    Prints a list to stdout of all values greater than or equal to
-    thresh, rounds (when using --fix) or ignores all other values.
 
     Keyword arguments:
         file_in: .vmf file to check
         fix: write out a new file with rounded coordinates (default False)
         fixname: filename when using --fix (default appends _VERTALERT)
-        thresh: threshold below which to ignore/round coordinates (default 0.2)
+        thresh: threshold between snaplo and snaphi (default snaplo * 0.2)
+        snaplo: deviations less than thresh will be rounded to the nearest
+                multiple of this value (default 1)
+        snaphi: deviations equal to or greater than thresh will be rounded to
+                the nearest multiple of this value (default None)
 
     Please note this function currently only checks enabled VisGroups.
 
