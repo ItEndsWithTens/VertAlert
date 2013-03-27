@@ -80,10 +80,18 @@ def fix_plane(plane, thresh, snaplo, snaphi):
             rounded = (orig / snaplo).quantize(1, dec.ROUND_HALF_EVEN) * snaplo
         elif snaphi is not None:
             rounded = (orig / snaphi).quantize(1, dec.ROUND_HALF_EVEN) * snaphi
-        rounded = rounded.normalize()
+
+        # I want to remove trailing zeroes from the rounded results, and the
+        # normalize method does that. Normalizing all values, however, will
+        # introduce scientific notation for integers that end in a zero, so I
+        # only modify values containing a decimal point. This is only cosmetic.
+        if '.' in str(rounded):
+            rounded = rounded.normalize()
+
         # I replace str(coord) instead of orig here, since
         # that would miss values using scientific notation.
         plane_new = plane_new.replace(str(coord), str(rounded), 1)
+
     return plane_new
 
 
