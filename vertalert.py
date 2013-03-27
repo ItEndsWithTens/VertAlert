@@ -78,14 +78,12 @@ def fix_plane(plane, thresh, snaplo, snaphi):
         orig = dec.Decimal(coord)
         if get_dev(orig, snaplo) < thresh:
             rounded = (orig / snaplo).quantize(1, dec.ROUND_HALF_EVEN) * snaplo
-            rounded = rounded.normalize()
-            # I replace str(coord) instead of orig here, since
-            # that would miss values using scientific notation.
-            plane_new = plane_new.replace(str(coord), str(rounded), 1)
         elif snaphi is not None:
             rounded = (orig / snaphi).quantize(1, dec.ROUND_HALF_EVEN) * snaphi
-            rounded = rounded.normalize()
-            plane_new = plane_new.replace(str(coord), str(rounded), 1)
+        rounded = rounded.normalize()
+        # I replace str(coord) instead of orig here, since
+        # that would miss values using scientific notation.
+        plane_new = plane_new.replace(str(coord), str(rounded), 1)
     return plane_new
 
 
