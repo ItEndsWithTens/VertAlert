@@ -53,7 +53,6 @@ def get_max_dev(planes, snap):
     devs = []
     for coord in floats:
         devs.append(get_dev(coord, snap))
-
     return max(devs)
 
 
@@ -140,6 +139,7 @@ def fix_brushes(brushes, thresh, vmf_in, snaplo, snaphi):
 
         sys.stdout.write('\r%s%% complete' % str(int(i / percent)))
         sys.stdout.flush()
+
     sys.stdout.write("\r             \n")
     sys.stdout.flush()
 
@@ -246,7 +246,7 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None,
     #            closing curly brace.
     brushes = re.findall(r'solid\r?\n\t{.*?\r?\n\t}', vmf_in, re.DOTALL)
     rounded_count, suspects, vmf_out = fix_brushes(brushes, thresh, vmf_in,
-                                               snaplo, snaphi)
+                                                   snaplo, snaphi)
 
     print_dev_table(suspects, rounded_count, fix)
 
