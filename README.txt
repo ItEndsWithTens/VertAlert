@@ -1,22 +1,22 @@
 
-  --VertAlert 0.2.1--
+  --VertAlert 1.0.0--
 
     Find, display, and optionally round floating point plane coordinates in
-  Source engine .vmf files. Standalone executable has no dependencies, Python
-  script requires either Python 2.7 or 3.3.
+  Source engine .vmf files. Standalone executables have no dependencies, Python
+  script requires either Python 2.7 or 3.3. Supports Windows, Linux, and OS X.
 
     Latest release hosted at http://www.gyroshot.com/vertalert.htm
 
-    Any comments or questions can be sent to robert.martens@gmail.com or, should
-  you prefer social media, @ItEndsWithTens on Twitter.
+    Comments and questions can be sent by email to robert.martens@gmail.com or
+  via Twitter to @ItEndsWithTens.
 
 
   --Usage--
 
-    Whether using the standalone executable or the Python script, the parameters
-  are the same:
+    The standalone executables and Python script share the same parameters:
 
-    vertalert [-h] [-f] [-fn FIXNAME] [-t THRESH] input
+    vertalert [-h] [-f] [-fn FIXNAME] [-t THRESH]
+              [-sl SNAPLO] [-sh SNAPHI] input
 
       -h, --help
         Shows usage information.
@@ -33,11 +33,78 @@
       the end of the input filename, before the extension.
 
       -t, --thresh
-        Threshold below which coordinates will be automatically rounded (with
-      --fix) or ignored, representing distance from nearest integer. Range 0
-      through 0.5, default 0.2 to match VBSP default. A setting of 0 will
-      display all offending coordinates, effectively disabling rounding, while a
-      setting of 0.6 will round/ignore everything in the map.
+        Threshold between snaplo and snaphi. A setting of 0 will display all
+      float coordinates, effectively disabling rounding. Default snaplo * 0.2.
+
+      -sl, --snaplo
+        Coordinates with deviations less than thresh will be rounded to the
+      nearest multiple of this value; said multiple also serves as the basis for
+      calculating a coordinate's deviation. Default 1.
+
+      -sh, --snaphi
+        Coordinates with deviations equal to or greater than thresh will be
+      rounded to the nearest multiple of this value. Default None.
+
+
+  --Tech notes--
+
+    VertAlert currently uses a very primitive means of examining the .vmf file,
+  and as a side effect it only looks through VisGroups that you've enabled. The
+  critic in me notes that this is born of my laziness, but I try to think of it
+  as helping you narrow down the source of your problems, and lets you focus on
+  fixing one area at a time.
+
+    If the --fix flag is specified, and you've used a large enough threshold, 
+  VertAlert will use the so-called "Banker's Rounding", where values of exactly
+  0.5 will be rounded to the even number. If you'd rather use something else,
+  you'll need to modify the Python script.
+
+    When not using snaphi, brushes whose max deviation is less than thresh will
+  have their float coordinates rounded, while brushes with even one coordinate
+  equal to or greater than thresh will be left completely untouched. If you are
+  using snaphi, on the other hand, coordinates are treated individually, and a
+  given brush might have some rounded to snaplo and some to snaphi, depending on
+  their distance from snaplo.
+
+    The test map test_snaphi was created by using the spike tool to create an
+  eight-sided spike measuring 64x64x64. Scaling the result down to 32x32x32
+  produces a spike whose corner vertices (northeast, southwest, etc.) land at
+  exactly 0.5 units between one grid line and the next. Duplicate the spike,
+  then move the whole group slightly. Move the group back where it was, save,
+  close, and reopen the file, and you should get an invalid solids error. Run
+  VertAlert on the file, though, and those spikes should be corrected, allowing
+  the vmf to open in Hammer without a problem.
+
+
+  --Hammer setup--
+
+    Through use of the --fix and --fixname options, the standalone version of
+  this tool can be easily integrated with your Hammer compile options. Bring up
+  the Run Map dialog in Hammer with F9, then click Edit next to the drop-down
+  list of Configurations.
+
+    Highlight Default, for the sake of this example, and click Copy. Provide a
+  new name, I'll use "VertAlert (Default)" to demonstrate. Close the Run Map
+  Configurations dialog box, then choose the new configuration from the list.
+
+    Click New to be given a blank command, then hit Move Up until it's all the
+  way at the top. Now, with it selected, use the right hand pane to set Command
+  to point to the VertAlert executable, wherever you placed it.
+
+    Next, set Parameters to $path\$file.$ext --fix so VertAlert will produce a
+  new .vmf with all the problematic coordinates rounded. Check the box labeled
+  "Ensure file post-exists:", and set its value to $path\$file_VERTALERT.vmf
+
+    After that, it's simply a matter of going through each command (bsp, light,
+  rad, Copy File, game) and replacing each instance of $path\$file with the
+  alternative $path\$file_VERTALERT (though be careful with Copy File, you don't
+  want to accidentally delete the .bsp file extension).
+
+    Once finished, the program should be transparent. You work on the original
+  VMF, the toolchain runs VertAlert to produce an altered file, compiles that
+  instead, and launches the modified version for you. The original map file, and
+  your original compile settings, remain untouched, and you can easily switch
+  back to compiling things as usual.
 
 
   --Background--
@@ -70,56 +137,13 @@
 
     Since most of the larger errors are either the result of intentional brush
   rotations or accidental scales, and should be visually examined one by one,
-  the --fix option is of limited utility. I've only left it in for that odd
-  corner case you might run in to.
-
-
-  --Tech notes--
-
-    VertAlert currently uses a very primitive means of examining the .vmf file,
-  and as a side effect it only looks through VisGroups that you've enabled. The
-  critic in me notes that this is born of my laziness, but I try to think of it
-  as helping you narrow down the source of your problems, and lets you focus on
-  fixing one area at a time.
-
-    If the --fix flag is specified, and you've used a large enough threshold, 
-  VertAlert will use the so-called "Banker's Rounding", where values of exactly
-  0.5 will be rounded to the even number. If you'd rather use something else,
-  you'll need to modify the Python script.
-
-    
-  --Hammer setup--
-
-    Through use of the --fix and --fixname options, the standalone version of
-  this tool can be easily integrated with your Hammer compile options. Bring up
-  the Run Map dialog in Hammer with F9, then click Edit next to the drop-down
-  list of Configurations.
-
-    Highlight Default, for the sake of this example, and click Copy. Provide a
-  new name, I'll use "VertAlert (Default)" to demonstrate. Close the Run Map
-  Configurations dialog box, then choose the new configuration from the list.
-
-    Click New to be given a blank command, then hit Move Up until it's all the
-  way at the top. Now, with it selected, use the right hand pane to set Command
-  to point to the VertAlert executable, wherever you placed it.
-
-    Next, set Parameters to $path\$file.$ext --fix so VertAlert will produce a
-  new .vmf with all the problematic coordinates rounded. Check the box labeled
-  "Ensure file post-exists:", and set its value to $path\$file_VERTALERT.vmf
-
-    After that, it's simply a matter of going through each command (bsp, light,
-  rad, Copy File, game) and replacing each instance of $path\$file with the
-  alternative $path\$file_VERTALERT (though be careful with Copy File, you don't
-  want to accidentally delete the .bsp file extension).
-
-    Once finished, the program should be transparent. You work on the original
-  VMF, the toolchain runs VertAlert to produce an altered file, compiles that
-  instead, and launches the modified version for you. The original map file, and
-  your original compile settings, remain untouched, and you can easily switch
-  back to compiling things as usual.
+  the --fix option is of limited utility unless combined with --snaphi.
 
 
   --Changes--
+
+    1.0.0 - March 28th, 2013
+      Add snaplo and snaphi parameters
 
     0.2.1 - January 1st, 2013
       Update fix_plane's use of string replace method
