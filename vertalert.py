@@ -261,7 +261,7 @@ def vertalert(file_in, fix=False, fixname=None, thresh=None,
 
 if __name__ == '__main__':
     import argparse
-    PARSER = argparse.ArgumentParser(description="VertAlert 0.2.1")
+    PARSER = argparse.ArgumentParser(description="VertAlert 1.0.0")
     PARSER.add_argument("input", help="VMF to check")
     PARSER.add_argument(
         "-f", "--fix", help="write fixed up VMF", action="store_true")
